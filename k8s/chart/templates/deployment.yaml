@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fortipipe.fullname" . }}
+  labels:
+    app: {{ include "fortipipe.name" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "fortipipe.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "fortipipe.name" . }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fortipipe.fullname" . }}-secrets
+                  key: secret-key
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

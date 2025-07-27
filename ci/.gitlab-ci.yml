@@ -1,0 +1,56 @@
+stages:
+  - build
+  - scan
+  - deploy
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  KUBE_NAMESPACE: dev
+
+before_script:
+  - echo "Starting job in stage: $CI_JOB_STAGE"
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker build -t $IMAGE_TAG -f ci/Dockerfile .
+    - echo $CI_JOB_TOKEN | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - docker push $IMAGE_TAG
+  only:
+    - branches
+
+semgrep_scan:
+  stage: scan
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep --config=security/semgrep-rules/ --error --severity CRITICAL app/
+  allow_failure: false
+
+trivy_scan:
+  stage: scan
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --exit-code 1 --severity CRITICAL $IMAGE_TAG
+  allow_failure: false
+
+deploy:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  script:
+    - kubectl config use-context $KUBE_CONTEXT
+    - kubectl apply -n $KUBE_NAMESPACE -f k8s/
+    # Optional: Helm deployment (uncomment to use Helm)
+    # - helm upgrade --install fortipipe k8s/chart/ --namespace $KUBE_NAMESPACE --set image.tag=$CI_COMMIT_SHA
+  environment:
+    name: dev
+    url: https://$KUBE_INGRESS_BASE_DOMAIN
+  only:
+    - branches
+  when: manual
+
+# Secrets and Kube config should be set via GitLab CI/CD variables or secret management 

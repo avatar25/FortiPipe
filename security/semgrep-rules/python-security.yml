@@ -1,0 +1,10 @@
+rules:
+  - id: python.hardcoded-secret
+    patterns:
+      - pattern: "$VAR = \"$SECRET\""
+    message: "Possible hardcoded secret detected. Use environment variables or secret management."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: CWE-798
+      owasp: A2:2017 

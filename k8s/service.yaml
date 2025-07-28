@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fortipipe-service
+  labels:
+    app: fortipipe
+spec:
+  type: ClusterIP
+  selector:
+    app: fortipipe
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000 

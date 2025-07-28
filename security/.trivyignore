@@ -1,0 +1,3 @@
+# List CVE IDs to ignore during Trivy scans, one per line
+# Example:
+# CVE-2023-0000 
